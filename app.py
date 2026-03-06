@@ -35,49 +35,50 @@ PREMIUM_CSS = f"""
 
 /* ── Base ── */
 html, body, [class*="css"] {{ font-family: 'Inter', sans-serif; }}
-.stApp {{ background: linear-gradient(135deg, #0a0e1a 0%, #0d1321 50%, #0a0f1e 100%); color: #c9d1d9; }}
+.stApp {{ background: #f8fafc; color: #1e293b; }}
 
 /* ── Sidebar ── */
 section[data-testid="stSidebar"] {{
-    background: linear-gradient(180deg, #0d1117 0%, #0f1520 100%);
-    border-right: 1px solid rgba(56,139,253,0.15);
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
 }}
-section[data-testid="stSidebar"] .stMarkdown h1 {{ color: #58a6ff; font-size: 1.4rem; }}
+section[data-testid="stSidebar"] .stMarkdown h1 {{ color: #1e3a8a; font-size: 1.4rem; }}
+section[data-testid="stSidebar"] .stMarkdown p {{ color: #475569; }}
 
 /* ── KPI Cards ── */
 .kpi-row {{ display: flex; gap: 16px; margin: 16px 0 24px 0; }}
 .kpi-card {{
     flex: 1;
-    background: linear-gradient(135deg, rgba(22,27,34,0.9) 0%, rgba(13,17,23,0.95) 100%);
-    border: 1px solid rgba(56,139,253,0.12);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 20px 24px;
-    backdrop-filter: blur(12px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     transition: all 0.3s ease;
 }}
-.kpi-card:hover {{ border-color: rgba(56,139,253,0.35); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }}
-.kpi-value {{ font-size: 2.2rem; font-weight: 700; color: #e6edf3; margin: 4px 0; }}
-.kpi-label {{ font-size: 0.85rem; color: #8b949e; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }}
-.kpi-sub {{ font-size: 0.75rem; margin-top: 6px; }}
-.kpi-sub.green {{ color: #3fb950; }}
-.kpi-sub.yellow {{ color: #d29922; }}
-.kpi-sub.purple {{ color: #bc8cff; }}
-.kpi-icon {{ float: right; font-size: 1.6rem; opacity: 0.6; }}
+.kpi-card:hover {{ border-color: #cbd5e1; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.06); }}
+.kpi-value {{ font-size: 2.2rem; font-weight: 700; color: #0f172a; margin: 4px 0; }}
+.kpi-label {{ font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }}
+.kpi-sub {{ font-size: 0.75rem; margin-top: 6px; font-weight: 500; }}
+.kpi-sub.green {{ color: #16a34a; }}
+.kpi-sub.yellow {{ color: #d97706; }}
+.kpi-sub.purple {{ color: #9333ea; }}
+.kpi-icon {{ float: right; font-size: 1.6rem; opacity: 0.8; }}
 
 /* ── Section Headers ── */
 .section-header {{
-    background: linear-gradient(90deg, rgba(22,27,34,0.95) 0%, rgba(13,17,23,0.8) 100%);
+    background: #f1f5f9;
     padding: 14px 20px;
-    border-left: 4px solid #238636;
+    border-left: 4px solid #2563eb;
     border-radius: 8px;
     margin: 28px 0 16px 0;
     font-weight: 600;
-    color: #e6edf3;
+    color: #1e293b;
     font-size: 1.05rem;
     letter-spacing: 0.3px;
 }}
-.section-header.purple {{ border-left-color: #8957e5; }}
-.section-header.gold {{ border-left-color: #d29922; }}
+.section-header.purple {{ border-left-color: #9333ea; background: #faf5ff; }}
+.section-header.gold {{ border-left-color: #f59e0b; background: #fffbeb; }}
 
 /* ── Top Bar ── */
 .top-bar {{
@@ -85,14 +86,14 @@ section[data-testid="stSidebar"] .stMarkdown h1 {{ color: #58a6ff; font-size: 1.
     align-items: center;
     justify-content: space-between;
     padding: 12px 0;
-    border-bottom: 1px solid rgba(48,54,61,0.6);
+    border-bottom: 1px solid #e2e8f0;
     margin-bottom: 8px;
 }}
-.top-bar h2 {{ margin: 0; color: #e6edf3; font-size: 1.5rem; font-weight: 600; }}
+.top-bar h2 {{ margin: 0; color: #1e3a8a; font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; }}
 .top-bar .country-badge {{
     display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(56,139,253,0.1); border: 1px solid rgba(56,139,253,0.2);
-    padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; color: #58a6ff;
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    padding: 4px 14px; border-radius: 20px; font-size: 0.85rem; color: #1d4ed8; font-weight: 500;
 }}
 
 /* ── Agent Tags ── */
@@ -100,87 +101,96 @@ section[data-testid="stSidebar"] .stMarkdown h1 {{ color: #58a6ff; font-size: 1.
     display: inline-block; padding: 3px 10px; border-radius: 12px;
     font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
 }}
-.tag-1 {{ background: linear-gradient(135deg, #238636, #2ea043); color: white; }}
-.tag-2 {{ background: linear-gradient(135deg, #8957e5, #a371f7); color: white; }}
-.tag-3 {{ background: linear-gradient(135deg, #d29922, #e3b341); color: #0d1117; }}
+.tag-1 {{ background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }}
+.tag-2 {{ background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }}
+.tag-3 {{ background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }}
 
 /* ── Report Card ── */
 .report-card {{
-    background: linear-gradient(135deg, rgba(22,27,34,0.95) 0%, rgba(13,17,23,0.9) 100%);
-    border: 1px solid rgba(56,139,253,0.1);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 28px;
     margin: 16px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }}
-.report-card h3 {{ color: #e6edf3; margin-top: 0; }}
+.report-card h3 {{ color: #1e293b; margin-top: 0; }}
 .report-quote {{
-    background: rgba(56,139,253,0.04);
-    border-left: 3px solid #58a6ff;
+    background: #f8fafc;
+    border-left: 3px solid #3b82f6;
     padding: 16px 20px;
     border-radius: 0 8px 8px 0;
     margin: 16px 0;
     font-style: italic;
-    color: #8b949e;
+    color: #475569;
     line-height: 1.6;
 }}
 
 /* ── Score Bar ── */
 .score-bar-container {{
     display: flex; gap: 20px; margin-top: 20px;
-    background: rgba(13,17,23,0.6); border-radius: 10px; padding: 16px 20px;
-    border: 1px solid rgba(48,54,61,0.4);
+    background: #f8fafc; border-radius: 10px; padding: 16px 20px;
+    border: 1px solid #e2e8f0;
 }}
 .score-item {{ flex: 1; }}
-.score-item .label {{ font-size: 0.7rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }}
-.score-item .value {{ font-size: 1.1rem; font-weight: 700; color: #e6edf3; margin-top: 4px; }}
-.score-item .value.green {{ color: #3fb950; }}
+.score-item .label {{ font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }}
+.score-item .value {{ font-size: 1.2rem; font-weight: 700; color: #0f172a; margin-top: 4px; }}
+.score-item .value.green {{ color: #16a34a; }}
 
 /* ── Evidence & Risk Columns ── */
 .evidence-box {{ padding: 12px 0; }}
-.evidence-box h4 {{ color: #e6edf3; font-size: 0.9rem; margin-bottom: 8px; }}
-.evidence-box li {{ color: #8b949e; font-size: 0.85rem; line-height: 1.7; }}
+.evidence-box h4 {{ color: #1e293b; font-size: 0.95rem; margin-bottom: 8px; font-weight: 600; }}
+.evidence-box li {{ color: #475569; font-size: 0.9rem; line-height: 1.7; }}
 
 /* ── Recent Reports ── */
 .recent-card {{
-    background: rgba(22,27,34,0.9);
-    border: 1px solid rgba(48,54,61,0.5);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 10px;
     padding: 16px;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }}
-.recent-card:hover {{ border-color: rgba(56,139,253,0.3); }}
-.recent-card .name {{ color: #e6edf3; font-weight: 600; font-size: 0.95rem; }}
-.recent-card .sub {{ color: #8b949e; font-size: 0.8rem; }}
-.badge-completed {{ background: #238636; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: 600; }}
+.recent-card:hover {{ border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.1); }}
+.recent-card .name {{ color: #1e293b; font-weight: 600; font-size: 0.95rem; }}
+.recent-card .sub {{ color: #64748b; font-size: 0.85rem; }}
+.badge-completed {{ background: #dcfce7; color: #166534; padding: 3px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; border: 1px solid #bbf7d0; }}
 
 /* ── Tables ── */
-div[data-testid="stDataFrame"] {{ background: transparent; border-radius: 10px; overflow: hidden; }}
+div[data-testid="stDataFrame"] {{ background: #ffffff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }}
 
 /* ── Buttons ── */
 .stButton > button[kind="primary"] {{
-    background: linear-gradient(135deg, #da3633 0%, #f85149 100%) !important;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
     border: none !important;
     border-radius: 8px !important;
     font-weight: 600 !important;
+    color: white !important;
     letter-spacing: 0.3px !important;
     transition: all 0.2s ease !important;
 }}
 .stButton > button[kind="primary"]:hover {{
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 16px rgba(248,81,73,0.3) !important;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3) !important;
 }}
 
 /* ── Export Buttons ── */
-.stDownloadButton > button {{
-    background: linear-gradient(135deg, rgba(56,139,253,0.15), rgba(56,139,253,0.08)) !important;
-    border: 1px solid rgba(56,139,253,0.3) !important;
-    color: #58a6ff !important;
+.stDownloadButton > button, button[kind="secondary"] {{
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #475569 !important;
     border-radius: 8px !important;
     font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+}}
+.stDownloadButton > button:hover, button[kind="secondary"]:hover {{
+    border-color: #cbd5e1 !important;
+    background: #f8fafc !important;
+    color: #1e293b !important;
 }}
 
 /* ── Build Tag ── */
-.build-tag {{ position: fixed; bottom: 5px; right: 12px; font-size: 0.65rem; color: #30363d; }}
+.build-tag {{ position: fixed; bottom: 5px; right: 12px; font-size: 0.65rem; color: #94a3b8; }}
 
 /* ═══ PRINT STYLES (PDF Export) ═══ */
 @media print {{
@@ -191,7 +201,7 @@ div[data-testid="stDataFrame"] {{ background: transparent; border-radius: 10px; 
     [data-testid="stToolbar"] {{ display: none !important; }}
     
     .stApp {{
-        background: #0a0e1a !important;
+        background: #ffffff !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }}
@@ -199,6 +209,8 @@ div[data-testid="stDataFrame"] {{ background: transparent; border-radius: 10px; 
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #e2e8f0 !important;
     }}
     .main .block-container {{ padding: 1rem !important; max-width: 100% !important; }}
     
@@ -207,16 +219,16 @@ div[data-testid="stDataFrame"] {{ background: transparent; border-radius: 10px; 
         display: block !important;
         text-align: center;
         padding: 20px 0;
-        border-bottom: 2px solid #238636;
+        border-bottom: 2px solid #2563eb;
         margin-bottom: 20px;
     }}
     .print-footer {{
         display: block !important;
         text-align: center;
         font-size: 0.7rem;
-        color: #484f58;
+        color: #64748b;
         padding-top: 20px;
-        border-top: 1px solid #30363d;
+        border-top: 1px solid #e2e8f0;
         margin-top: 30px;
     }}
 }}
