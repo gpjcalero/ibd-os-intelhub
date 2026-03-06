@@ -283,11 +283,24 @@ with st.sidebar:
             "google/gemini-2.5-flash",
             "openai/gpt-4o",
             "openai/gpt-4o-mini",
-            "deepseek/deepseek-chat"
+            "deepseek/deepseek-chat",
+            "--- Custom Model ---"
         ],
         index=0,
-        help="Modelos vía OpenRouter. Selecciona el cerebro adecuado según coste/calidad."
+        help="Elige un modelo predefinido o '--- Custom Model ---' para escribir cualquier otro."
     )
+    
+    # ── CUSTOM MODEL INPUT ──
+    if selected_model == "--- Custom Model ---":
+        custom_model_str = st.text_input(
+            "Escribe el ID exacto de OpenRouter", 
+            value="openai/gpt-5.3-pro",
+            help="Ej: openai/o3-mini, google/gemini-3.1-pro, moonshotai/moonlight-16b-a3b-instruct"
+        )
+        final_model = custom_model_str.strip()
+    else:
+        final_model = selected_model
+
     if not api_key_input:
         st.warning("Introduce tu OpenRouter API Key para activar la IA completa.", icon="⚠️")
         
@@ -534,7 +547,7 @@ with c_act:
                 
                 res = research_with_openrouter(
                     api_key=api_key_input, company_name=selected_comp,
-                    model_name=selected_model,
+                    model_name=final_model,
                     country=str(best_contact.get('Country', '')),
                     contact_name=str(best_contact.get(c_name_col, '')),
                     contact_title=str(best_contact.get(c_job_col, ''))
