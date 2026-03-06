@@ -17,7 +17,7 @@ from .matching import (
 )
 
 from .ai_research import (
-    research_with_gemini_rest,
+    research_with_openrouter,
     AIResearchResult
 )
 
@@ -33,6 +33,6 @@ __all__ = [
     'B2BMatcher',
     
     # AI Research (Agent 3)
-    'research_with_gemini_rest',
+    'research_with_openrouter',
     'AIResearchResult'
 ]
