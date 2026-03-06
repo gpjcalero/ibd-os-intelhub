@@ -20,7 +20,7 @@ BUILD_STAMP = "v5.0 — IntelHub"
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.normalizer import normalize_company_name
 from core.scoring import score_dataframe
-from core.ai_research import research_with_gemini_rest
+from core.ai_research import research_with_openrouter
 from core.matching import process_tenders
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -273,15 +273,23 @@ with st.sidebar:
     st.caption("Strategic Intelligence Platform")
     
     # ── SECURITY & AI SETTINGS ──
-    api_key_input = st.text_input("🔑 Gemini API Key", type="password", placeholder="AIzaSy...")
+    api_key_input = st.text_input("🔑 OpenRouter API Key", type="password", placeholder="sk-or-v1-...")
     selected_model = st.selectbox(
         "🧠 AI Model (Agent 3)", 
-        ["gemini-3-pro-preview", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"],
+        [
+            "anthropic/claude-3.7-sonnet",
+            "anthropic/claude-3.5-haiku",
+            "google/gemini-2.5-pro",
+            "google/gemini-2.5-flash",
+            "openai/gpt-4o",
+            "openai/gpt-4o-mini",
+            "deepseek/deepseek-chat"
+        ],
         index=0,
-        help="Elige el modelo. 'pro' = Mayor razonamiento (más caro). 'flash' = Rápido y económico."
+        help="Modelos vía OpenRouter. Selecciona el cerebro adecuado según coste/calidad."
     )
     if not api_key_input:
-        st.warning("Introduce tu API Key para activar la IA completa.", icon="⚠️")
+        st.warning("Introduce tu OpenRouter API Key para activar la IA completa.", icon="⚠️")
         
     st.markdown("---")
     
@@ -524,7 +532,7 @@ with c_act:
                 c_name_col = next((c for c in best_contact.index if 'name' in c.lower()), '')
                 c_job_col = next((c for c in best_contact.index if 'job' in c.lower() or 'title' in c.lower()), '')
                 
-                res = research_with_gemini_rest(
+                res = research_with_openrouter(
                     api_key=api_key_input, company_name=selected_comp,
                     model_name=selected_model,
                     country=str(best_contact.get('Country', '')),
