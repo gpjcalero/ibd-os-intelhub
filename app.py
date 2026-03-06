@@ -15,7 +15,6 @@ from datetime import datetime
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
-GEMINI_API_KEY = "AIzaSyCbWyJvuBEjlybS7kmL4EUekb5-nrt2pao"
 BUILD_STAMP = "v5.0 — IntelHub"
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -272,6 +271,12 @@ for key in ['contacts_scored', 'tenders_enriched', 'companies_classified', 'rese
 with st.sidebar:
     st.markdown("## 🤖 IBD OS")
     st.caption("Strategic Intelligence Platform")
+    
+    # ── SECURITY: API KEY INPUT ──
+    api_key_input = st.text_input("🔑 Gemini API Key", type="password", placeholder="AIzaSy...")
+    if not api_key_input:
+        st.warning("Introduce tu API Key para activar la IA completa.", icon="⚠️")
+        
     st.markdown("---")
     
     # Agent 1
@@ -503,23 +508,26 @@ with c_act:
     st.markdown('<span class="agent-tag tag-3">AGENT 3</span> &nbsp; <b>Commercial Strategist</b>', unsafe_allow_html=True)
     if st.button("🧠 GENERATE SALES STRATEGY", type="primary", use_container_width=True):
         with st.spinner("Strategist Agent analyzing..."):
-            comp_norm = df_show[df_show['Empresa'] == selected_comp]['Normalized_Company'].iloc[0]
-            contact_rows = st.session_state.contacts_scored[st.session_state.contacts_scored['Normalized_Company'] == comp_norm]
-            best_contact = contact_rows.sort_values('Lead_Score', ascending=False).iloc[0]
-            
-            c_name_col = next((c for c in best_contact.index if 'name' in c.lower()), '')
-            c_job_col = next((c for c in best_contact.index if 'job' in c.lower() or 'title' in c.lower()), '')
-            
-            res = research_with_gemini_rest(
-                api_key=GEMINI_API_KEY, company_name=selected_comp,
-                model_name="gemini-3-pro-preview",
-                country=str(best_contact.get('Country', '')),
-                contact_name=str(best_contact.get(c_name_col, '')),
-                contact_title=str(best_contact.get(c_job_col, ''))
-            )
-            if res:
-                st.session_state.research_cache[selected_comp] = res
-                st.rerun()
+            if not api_key_input:
+                st.error("Error: Se requiere una Gemini API Key en la barra lateral.")
+            else:
+                comp_norm = df_show[df_show['Empresa'] == selected_comp]['Normalized_Company'].iloc[0]
+                contact_rows = st.session_state.contacts_scored[st.session_state.contacts_scored['Normalized_Company'] == comp_norm]
+                best_contact = contact_rows.sort_values('Lead_Score', ascending=False).iloc[0]
+                
+                c_name_col = next((c for c in best_contact.index if 'name' in c.lower()), '')
+                c_job_col = next((c for c in best_contact.index if 'job' in c.lower() or 'title' in c.lower()), '')
+                
+                res = research_with_gemini_rest(
+                    api_key=api_key_input, company_name=selected_comp,
+                    model_name="gemini-3-pro-preview",
+                    country=str(best_contact.get('Country', '')),
+                    contact_name=str(best_contact.get(c_name_col, '')),
+                    contact_title=str(best_contact.get(c_job_col, ''))
+                )
+                if res:
+                    st.session_state.research_cache[selected_comp] = res
+                    st.rerun()
 
 # ── STRATEGIC REPORT (Agent 3 Output) ──
 if selected_comp and selected_comp in st.session_state.research_cache:
