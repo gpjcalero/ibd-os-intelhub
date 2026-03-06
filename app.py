@@ -272,8 +272,14 @@ with st.sidebar:
     st.markdown("## 🤖 IBD OS")
     st.caption("Strategic Intelligence Platform")
     
-    # ── SECURITY: API KEY INPUT ──
+    # ── SECURITY & AI SETTINGS ──
     api_key_input = st.text_input("🔑 Gemini API Key", type="password", placeholder="AIzaSy...")
+    selected_model = st.selectbox(
+        "🧠 AI Model (Agent 3)", 
+        ["gemini-3-pro-preview", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"],
+        index=0,
+        help="Elige el modelo. 'pro' = Mayor razonamiento (más caro). 'flash' = Rápido y económico."
+    )
     if not api_key_input:
         st.warning("Introduce tu API Key para activar la IA completa.", icon="⚠️")
         
@@ -520,7 +526,7 @@ with c_act:
                 
                 res = research_with_gemini_rest(
                     api_key=api_key_input, company_name=selected_comp,
-                    model_name="gemini-3-pro-preview",
+                    model_name=selected_model,
                     country=str(best_contact.get('Country', '')),
                     contact_name=str(best_contact.get(c_name_col, '')),
                     contact_title=str(best_contact.get(c_job_col, ''))
