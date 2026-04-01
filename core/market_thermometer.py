@@ -27,7 +27,8 @@ class ThermometerResult:
 def analyze_market(
     country: str,
     objective: str,
-    model_name: str = "qwen3.5:latest"
+    model_name: str = "qwen3.5:latest",
+    api_key: str = ""
 ) -> Optional[ThermometerResult]:
     """
     Market Thermometer: Analiza un país y devuelve:
@@ -106,82 +107,111 @@ REGLAS:
 2. El "scoring_profile.target_titles" debe reflejar qué cargos son relevantes para el objetivo del comercial en ese país.
 3. Las "global_db_instructions" deben ser filtros EXACTOS y accionables para la plataforma Global Database (SIC codes internacionales, NACE Rev.2, sectores GDB, cargos, etc.).
 4. Adapta TODO al país y objetivo. No uses respuestas genéricas.
-5. El JSON debe ser válido y ser la ÚNICA salida.
+5. El JSON debe ser válido y ser la ÚNICA salida. No escribas texto introductorio, sólo el objeto JSON.
 """
 
-    payload = {
-        "model": model_name,
-        "messages": [
-            {"role": "system", "content": "You are a Senior Market Intelligence Strategist for Porcelanosa Group. Always reply in valid JSON."},
-            {"role": "user", "content": prompt}
-        ],
-        "stream": False,
-        "format": "json"
-    }
-
     try:
-        url = "http://localhost:11434/api/chat"
-        response = requests.post(url, data=json.dumps(payload), timeout=600)
+        if model_name.startswith("ollama/"):
+            # Call Local Ollama
+            actual_model = model_name.replace("ollama/", "")
+            payload = {
+                "model": actual_model,
+                "messages": [
+                    {"role": "system", "content": "You are a Senior Market Intelligence Strategist. Always reply in valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                "stream": False,
+                "format": "json"
+            }
+            url = "http://localhost:11434/api/chat"
+            response = requests.post(url, data=json.dumps(payload), timeout=600)
+            
+            if response.status_code == 200:
+                content_text = response.json()['message']['content']
+            else:
+                raise Exception(f"Ollama Error: {response.text}")
 
-        if response.status_code == 200:
-            res_data = response.json()
-            content_text = res_data['message']['content']
-
-            # Parse JSON
-            data = None
-            cleaned = content_text.strip()
-            cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
-            cleaned = re.sub(r'\s*```$', '', cleaned)
-            cleaned = cleaned.strip()
-
-            try:
-                data = json.loads(cleaned)
-            except:
-                start = cleaned.find('{')
-                if start != -1:
-                    depth = 0
-                    end = start
-                    for i in range(start, len(cleaned)):
-                        if cleaned[i] == '{': depth += 1
-                        elif cleaned[i] == '}': depth -= 1
-                        if depth == 0:
-                            end = i + 1
-                            break
-                    try:
-                        data = json.loads(cleaned[start:end])
-                    except:
-                        pass
-
-            if data is None:
-                return ThermometerResult(
-                    country=country, objective=objective,
-                    country_assessment=f"No se pudo parsear la respuesta del modelo. Texto raw: {content_text[:300]}",
-                    recommended_segments=[], scoring_profile={}, global_db_instructions={},
-                    risks=[], opportunities=[], confidence="low"
-                )
-
-            # Build scoring_profile with defaults
-            scoring_profile = data.get("scoring_profile", {})
-            if "target_sic" not in scoring_profile:
-                scoring_profile["target_sic"] = {"architectural": 25, "interior": 20}
-            if "target_titles" not in scoring_profile:
-                scoring_profile["target_titles"] = {"architect|director|partner": 15}
-            if "min_employees" not in scoring_profile:
-                scoring_profile["min_employees"] = 5
-
-            return ThermometerResult(
-                country=country,
-                objective=objective,
-                country_assessment=data.get("country_assessment", ""),
-                recommended_segments=data.get("recommended_segments", []),
-                scoring_profile=scoring_profile,
-                global_db_instructions=data.get("global_db_instructions", {}),
-                risks=data.get("risks", []),
-                opportunities=data.get("opportunities", []),
-                confidence=data.get("confidence", "medium")
-            )
         else:
-            raise Exception(f"Ollama Error: {response.status_code}")
+            # Call OpenRouter Cloud Model
+            if not api_key:
+                raise Exception("Se requiere OpenRouter API Key para usar modelos en la nube.")
+                
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "HTTP-Referer": "https://ibd-os-intelhub.pages.dev",
+                "X-Title": "IBD OS IntelHub v6",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": model_name,
+                "messages": [
+                    {"role": "system", "content": "You are a Senior Market Intelligence Strategist. Always reply in valid JSON. No markdown ticks around JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                "response_format": {"type": "json_object"}
+            }
+            
+            url = "https://openrouter.ai/api/v1/chat/completions"
+            response = requests.post(url, headers=headers, json=payload, timeout=45)
+            
+            if response.status_code == 200:
+                content_text = response.json()['choices'][0]['message']['content']
+            else:
+                raise Exception(f"OpenRouter Error: {response.text}")
+
+        # --- Base Parse Logic ---
+        data = None
+        cleaned = content_text.strip()
+        cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
+        cleaned = re.sub(r'\s*```$', '', cleaned)
+        cleaned = cleaned.strip()
+
+        try:
+            data = json.loads(cleaned)
+        except Exception:
+            start = cleaned.find('{')
+            if start != -1:
+                depth = 0
+                end = start
+                for i in range(start, len(cleaned)):
+                    if cleaned[i] == '{': depth += 1
+                    elif cleaned[i] == '}': depth -= 1
+                    if depth == 0:
+                        end = i + 1
+                        break
+                try:
+                    data = json.loads(cleaned[start:end])
+                except Exception:
+                    pass
+
+        if data is None:
+            return ThermometerResult(
+                country=country, objective=objective,
+                country_assessment=f"No se pudo parsear la respuesta del modelo. Texto raw: {content_text[:300]}",
+                recommended_segments=[], scoring_profile={}, global_db_instructions={},
+                risks=[], opportunities=[], confidence="low"
+            )
+
+        # Build scoring_profile with defaults
+        scoring_profile = data.get("scoring_profile", {})
+        if "target_sic" not in scoring_profile:
+            scoring_profile["target_sic"] = {"architectural": 25, "interior": 20}
+        if "target_titles" not in scoring_profile:
+            scoring_profile["target_titles"] = {"architect|director|partner": 15}
+        if "min_employees" not in scoring_profile:
+            scoring_profile["min_employees"] = 5
+
+        return ThermometerResult(
+            country=country,
+            objective=objective,
+            country_assessment=data.get("country_assessment", ""),
+            recommended_segments=data.get("recommended_segments", []),
+            scoring_profile=scoring_profile,
+            global_db_instructions=data.get("global_db_instructions", {}),
+            risks=data.get("risks", []),
+            opportunities=data.get("opportunities", []),
+            confidence=data.get("confidence", "medium")
+        )
 
     except Exception as e:
         return ThermometerResult(
