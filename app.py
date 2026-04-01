@@ -371,8 +371,44 @@ with st.sidebar:
                 st.markdown("**🟢 Oportunidades:**")
                 for o in tr.opportunities:
                     st.markdown(f"- {o}")
-    
+                    
+        # Feature: Descargar la investigación 
+        md_text = f"# 🌡️ Strategic Market Intelligence\n"
+        md_text += f"## {tr.country.title()} - {tr.objective.title()}\n\n"
+        md_text += f"### 📊 Evaluación del Mercado\n{tr.country_assessment}\n\n"
+        if tr.recommended_segments:
+            md_text += "### 🎯 Segmentos Recomendados\n"
+            for s in tr.recommended_segments: md_text += f"- {s}\n"
+            md_text += "\n"
+        if tr.global_db_instructions:
+            md_text += "### 🗄️ Filtros para Global Database\n"
+            gdi = tr.global_db_instructions
+            if gdi.get('sic_codes'): md_text += f"- **SIC Codes:** {', '.join(str(s) for s in gdi['sic_codes'])}\n"
+            if gdi.get('nace_codes'): md_text += f"- **NACE:** {', '.join(str(s) for s in gdi['nace_codes'])}\n"
+            if gdi.get('gdb_sectors'): md_text += f"- **GDB Sectors:** {', '.join(gdi['gdb_sectors'])}\n"
+            if gdi.get('job_titles'): md_text += f"- **Titles:** {', '.join(gdi['job_titles'])}\n"
+            if gdi.get('industry_keywords'): md_text += f"- **Keywords:** {', '.join(gdi['industry_keywords'])}\n"
+            if gdi.get('notes'): md_text += f"- **Notas:** {gdi['notes']}\n"
+            md_text += "\n"
+        if tr.risks:
+            md_text += "### ⚠️ Riesgos\n"
+            for r in tr.risks: md_text += f"- {r}\n"
+            md_text += "\n"
+        if tr.opportunities:
+            md_text += "### 🟢 Oportunidades\n"
+            for o in tr.opportunities: md_text += f"- {o}\n"
+            md_text += "\n"
+
+        st.download_button(
+            label="💾 Descargar Informe Técnico (.md)",
+            data=md_text,
+            file_name=f"IntelHub_{tr.country}_{tr.objective}.md".replace(" ", "_"),
+            mime="text/markdown",
+            use_container_width=True
+        )
+
     st.markdown("---")
+
     
     # Agent 1
     st.markdown('<span class="agent-tag tag-1">AGENT 1</span> &nbsp; <b>Prospector B2B</b>', unsafe_allow_html=True)
