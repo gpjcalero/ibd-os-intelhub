@@ -60,7 +60,7 @@
 
 <body>
     <div id="loading">
-        <div class="brand">IBD OS v6.0 — IntelHub</div>
+        <div class="brand">IBD OS v6.1 — IntelHub</div>
         <div class="spinner"></div>
         <div id="status" style="font-size: 0.9rem; color: #8b949e; margin-top: 10px;">
             Instalando entorno Python y AI Engine...
@@ -73,18 +73,18 @@
     <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.64.1/build/stlite.js"></script>
     <script>
         stlite.mount({
-            requirements: ["pandas", "openpyxl", "xlsxwriter", "numpy", "requests", "beautifulsoup4", "duckduckgo-search"],
+            requirements: ["pandas", "openpyxl", "xlsxwriter", "numpy", "requests", "beautifulsoup4"],
             entrypoint: "app.py",
             files: {
-                "app.py": { url: "app.py" },
-                "core/__init__.py": { url: "core/__init__.py" },
-                "core/ai_research.py": { url: "core/ai_research.py" },
-                "core/matching.py": { url: "core/matching.py" },
-                "core/normalizer.py": { url: "core/normalizer.py" },
-                "core/research.py": { url: "core/research.py" },
-                "core/scoring.py": { url: "core/scoring.py" },
-                "core/market_thermometer.py": { url: "core/market_thermometer.py" },
-                "core/web_enricher.py": { url: "core/web_enricher.py" }
+                "app.py": { url: "app.py?v=6.1" },
+                "core/__init__.py": { url: "core/__init__.py?v=6.1" },
+                "core/ai_research.py": { url: "core/ai_research.py?v=6.1" },
+                "core/matching.py": { url: "core/matching.py?v=6.1" },
+                "core/normalizer.py": { url: "core/normalizer.py?v=6.1" },
+                "core/research.py": { url: "core/research.py?v=6.1" },
+                "core/scoring.py": { url: "core/scoring.py?v=6.1" },
+                "core/market_thermometer.py": { url: "core/market_thermometer.py?v=6.1" },
+                "core/web_enricher.py": { url: "core/web_enricher.py?v=6.1" }
             },
         }, document.getElementById("root")).catch(err => {
             console.error(err);

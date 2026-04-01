@@ -36,18 +36,20 @@ def analyze_market(
     Incluye búsqueda web en vivo (DuckDuckGo) para contexto real-time.
     """
     import re
-    from duckduckgo_search import DDGS
     import time
     
     # --- 1. LIVE WEB SEARCH (DuckDuckGo) ---
     web_context = ""
     try:
+        from duckduckgo_search import DDGS
         query = f"construction architecture interior design market trends {country} {datetime.now().year}"
         results = DDGS().text(query, max_results=5)
         if results:
             web_context = "CONTEXTO WEB EN VIVO (Noticias y Tendencias Recientes):\n"
             for r in results:
                 web_context += f"- {r.get('title', '')}: {r.get('body', '')}\n"
+    except ImportError:
+        web_context = "(DuckDuckGo Search not available in this environment, using base knowledge only)"
     except Exception as e:
         web_context = f"(Error obteniendo contexto web: {str(e)})"
         
