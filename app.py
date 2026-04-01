@@ -1,6 +1,6 @@
 """
-IBD OS — Strategic Intelligence Dashboard v5.0 (IntelHub Design)
-Premium UI with KPI cards, glassmorphism, export features.
+IBD OS — Strategic Intelligence Dashboard v6.0 (IntelHub Design)
+Premium UI with Market Thermometer, dynamic scoring, web enrichment.
 """
 import streamlit as st
 import pandas as pd
@@ -15,13 +15,15 @@ from datetime import datetime
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
-BUILD_STAMP = "v5.0 — IntelHub"
+BUILD_STAMP = "v6.0 — IntelHub"
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.normalizer import normalize_company_name
 from core.scoring import score_dataframe
-from core.ai_research import research_with_openrouter
+from core.ai_research import research_with_openrouter, research_with_ollama
 from core.matching import process_tenders
+from core.market_thermometer import analyze_market
+from core.web_enricher import enrich_company
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PREMIUM CSS (IntelHub Dark Theme)
@@ -284,6 +286,9 @@ with st.sidebar:
             "openai/gpt-4o",
             "openai/gpt-4o-mini",
             "deepseek/deepseek-chat",
+            "--- Local (Ollama) ---",
+            "ollama/qwen3.5:latest",
+            "ollama/qwen3:4b",
             "--- Custom Model ---"
         ],
         index=0,
@@ -301,9 +306,69 @@ with st.sidebar:
     else:
         final_model = selected_model
 
-    if not api_key_input:
+    if not api_key_input and not final_model.startswith("ollama/"):
         st.warning("Introduce tu OpenRouter API Key para activar la IA completa.", icon="⚠️")
         
+    st.markdown("---")
+    
+    # ── MARKET THERMOMETER (Agent 0) ──
+    st.markdown('<span class="agent-tag" style="background:#f97316;">AGENT 0</span> &nbsp; <b>Market Thermometer</b>', unsafe_allow_html=True)
+    thermo_country = st.text_input("🌍 País objetivo", placeholder="Ej: Sweden, Vietnam, UAE...")
+    thermo_objective = st.selectbox(
+        "🎯 Objetivo",
+        ["Arquitectos", "Constructores / Promotores", "Interioristas / Contract", 
+         "Hoteles / Resorts", "Distribuidores", "Reformistas residencial", "Otro"],
+        index=0
+    )
+    
+    if st.button("🌡️ ANALIZAR MERCADO", use_container_width=True):
+        if not thermo_country:
+            st.error("Introduce un país.")
+        else:
+            with st.spinner(f"Analizando mercado de {thermo_country}..."):
+                result = analyze_market(
+                    country=thermo_country,
+                    objective=thermo_objective,
+                    model_name="qwen3.5:latest"
+                )
+                st.session_state.thermometer_result = result
+                st.rerun()
+    
+    # Show thermometer result if exists
+    if 'thermometer_result' in st.session_state and st.session_state.thermometer_result:
+        tr = st.session_state.thermometer_result
+        with st.expander(f"🌡️ Resultado: {tr.country} → {tr.objective}", expanded=False):
+            st.markdown(f"**Evaluación:** {tr.country_assessment}")
+            if tr.recommended_segments:
+                st.markdown("**Segmentos recomendados:**")
+                for seg in tr.recommended_segments:
+                    st.markdown(f"- {seg}")
+            if tr.global_db_instructions:
+                st.markdown("**Filtros para Global Database:**")
+                gdi = tr.global_db_instructions
+                if gdi.get('sic_codes'):
+                    st.markdown(f"- **SIC Codes:** {', '.join(str(s) for s in gdi['sic_codes'])}")
+                if gdi.get('nace_codes'):
+                    st.markdown(f"- **NACE Rev.2:** {', '.join(str(s) for s in gdi['nace_codes'])}")
+                if gdi.get('gdb_sectors'):
+                    st.markdown(f"- **GDB Sectors:** {', '.join(gdi['gdb_sectors'])}")
+                if gdi.get('job_titles'):
+                    st.markdown(f"- **Job Titles:** {', '.join(gdi['job_titles'])}")
+                if gdi.get('seniority'):
+                    st.markdown(f"- **Seniority:** {', '.join(gdi['seniority'])}")
+                if gdi.get('industry_keywords'):
+                    st.markdown(f"- **Keywords:** {', '.join(gdi['industry_keywords'])}")
+                if gdi.get('notes'):
+                    st.info(gdi['notes'])
+            if tr.risks:
+                st.markdown("**⚠️ Riesgos:**")
+                for r in tr.risks:
+                    st.markdown(f"- {r}")
+            if tr.opportunities:
+                st.markdown("**🟢 Oportunidades:**")
+                for o in tr.opportunities:
+                    st.markdown(f"- {o}")
+    
     st.markdown("---")
     
     # Agent 1
@@ -328,7 +393,14 @@ with st.sidebar:
                 df = pd.read_excel(f_contacts)
                 comp_col = next((c for c in df.columns if 'company' in c.lower()), df.columns[0])
                 df['Normalized_Company'] = df[comp_col].astype(str).apply(normalize_company_name)
-                df_scored = score_dataframe(df)
+                
+                # Pass scoring_profile from Thermometer if available
+                scoring_profile = None
+                if 'thermometer_result' in st.session_state and st.session_state.thermometer_result:
+                    scoring_profile = st.session_state.thermometer_result.scoring_profile
+                    s.write(f"🌡️ Usando perfil del Termómetro: {st.session_state.thermometer_result.country}")
+                
+                df_scored = score_dataframe(df, scoring_profile=scoring_profile)
                 
                 # ── MATCH ID: Clave de cruce para JOIN ──
                 df_scored['match_id'] = df_scored['Normalized_Company'].apply(generate_match_id)
@@ -360,7 +432,7 @@ with st.sidebar:
                         matched_companies = valid_matches['matched_company'].unique()
                         mask = df_scored[comp_col].isin(matched_companies)
                         df_scored.loc[mask, 'Tender_Score'] = 20
-                        df_scored['Total_Score'] = df_scored['Account_Score'] + df_scored['Lead_Score'] + df_scored['Tender_Score']
+                        df_scored['Total_Score'] = df_scored['SIC_Score'] + df_scored['Account_Score'] + df_scored['Lead_Score'] + df_scored['Tender_Score']
                         df_scored['Total_Score'] = df_scored['Total_Score'].clip(upper=100)
                         s.write(f"✅ {len(matched_companies)} empresas vinculadas a licitaciones")
                 
@@ -370,14 +442,15 @@ with st.sidebar:
                 
                 agg = {
                     comp_col: lambda x: x.mode()[0] if not x.empty else x.iloc[0],
-                    'Total_Score': 'max', 'Account_Score': 'max', 'Lead_Score': 'max', 'Tender_Score': 'max',
+                    'Total_Score': 'max', 'SIC_Score': 'max', 'Account_Score': 'max', 'Lead_Score': 'max', 'Tender_Score': 'max',
+                    'SIC_Category': 'first',
                     'Pipeline_Category': lambda x: x.mode()[0] if not x.empty else 'C',
                     'match_id': 'first'
                 }
                 if web_col: agg[web_col] = 'first'
                 
                 ranking = df_scored.groupby('Normalized_Company').agg(agg).reset_index()
-                rename = {comp_col: 'Empresa', 'Pipeline_Category': 'Categoría', 'Account_Score': 'Account', 'Lead_Score': 'Lead', 'Tender_Score': 'Tender'}
+                rename = {comp_col: 'Empresa', 'Pipeline_Category': 'Categoría', 'SIC_Score': 'SIC', 'Account_Score': 'Account', 'Lead_Score': 'Lead', 'Tender_Score': 'Tender', 'SIC_Category': 'Tipo'}
                 if web_col: rename[web_col] = 'Website'
                 ranking = ranking.rename(columns=rename)
                 
@@ -535,8 +608,8 @@ with c_act:
     st.markdown('<span class="agent-tag tag-3">AGENT 3</span> &nbsp; <b>Commercial Strategist</b>', unsafe_allow_html=True)
     if st.button("🧠 GENERATE SALES STRATEGY", type="primary", use_container_width=True):
         with st.spinner("Strategist Agent analyzing..."):
-            if not api_key_input:
-                st.error("Error: Se requiere una Gemini API Key en la barra lateral.")
+            if not api_key_input and not final_model.startswith("ollama/"):
+                st.error("Error: Se requiere una API Key en la barra lateral (no necesaria para modelos locales).")
             else:
                 comp_norm = df_show[df_show['Empresa'] == selected_comp]['Normalized_Company'].iloc[0]
                 contact_rows = st.session_state.contacts_scored[st.session_state.contacts_scored['Normalized_Company'] == comp_norm]
@@ -545,27 +618,46 @@ with c_act:
                 c_name_col = next((c for c in best_contact.index if 'name' in c.lower()), '')
                 c_job_col = next((c for c in best_contact.index if 'job' in c.lower() or 'title' in c.lower()), '')
                 
-                res = research_with_openrouter(
-                    api_key=api_key_input, company_name=selected_comp,
-                    model_name=final_model,
-                    country=str(best_contact.get('Country', '')),
-                    contact_name=str(best_contact.get(c_name_col, '')),
-                    contact_title=str(best_contact.get(c_job_col, ''))
-                )
+                if final_model.startswith("ollama/"):
+                    model_id = final_model.replace("ollama/", "")
+                    res = research_with_ollama(
+                        model_name=model_id,
+                        company_name=selected_comp,
+                        country=str(best_contact.get('Country', '')),
+                        contact_name=str(best_contact.get(c_name_col, '')),
+                        contact_title=str(best_contact.get(c_job_col, ''))
+                    )
+                else:
+                    res = research_with_openrouter(
+                        api_key=api_key_input, company_name=selected_comp,
+                        model_name=final_model,
+                        country=str(best_contact.get('Country', '')),
+                        contact_name=str(best_contact.get(c_name_col, '')),
+                        contact_title=str(best_contact.get(c_job_col, ''))
+                    )
+                
                 if res:
-                    st.session_state.research_cache[selected_comp] = res
+                    cache_key = f"{selected_comp}_{final_model}"
+                    st.session_state.research_cache[cache_key] = {'result': res, 'model': final_model}
                     st.rerun()
 
 # ── STRATEGIC REPORT (Agent 3 Output) ──
-if selected_comp and selected_comp in st.session_state.research_cache:
-    res = st.session_state.research_cache[selected_comp]
+cache_key = f"{selected_comp}_{final_model}" if selected_comp else None
+if cache_key and cache_key in st.session_state.research_cache:
+    cached = st.session_state.research_cache[cache_key]
+    res = cached['result']
+    used_model = cached.get('model', 'unknown')
     
     st.markdown(f'<div class="section-header gold">🧠 STRATEGIC REPORT: {selected_comp}</div>', unsafe_allow_html=True)
     
-    # Report Card
+    # Report Card with model badge
+    model_badge = used_model.split('/')[-1] if '/' in used_model else used_model
     st.markdown(f"""
     <div class="report-card">
-        <h3>Executive Analysis</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3>Executive Analysis</h3>
+            <span style="background:#f0f9ff; border:1px solid #bae6fd; color:#0369a1; padding:3px 10px; border-radius:12px; font-size:0.7rem; font-weight:600;">🤖 {model_badge}</span>
+        </div>
         <div class="report-quote">{res.summary}</div>
         <div class="score-bar-container">
             <div class="score-item">

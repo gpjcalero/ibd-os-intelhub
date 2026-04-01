@@ -183,3 +183,121 @@ IMPORTANTE:
             recommended_approach="", email_draft="", linkedin_draft="", sources=[], confidence="low"
         )
 
+def research_with_ollama(
+    model_name: str,
+    company_name: str,
+    country: str = "",
+    contact_name: str = "",
+    contact_title: str = ""
+) -> Optional[AIResearchResult]:
+    """
+    Investigación local usando Ollama.
+    """
+    import time
+    import re
+    from typing import Dict, List, Optional, Tuple
+
+    prompt = f"""ERES UN ESTRATEGA COMERCIAL SENIOR (CONSULTOR B2B INDUSTRIAL).
+Tu misión es analizar a '{company_name}' ({country}) para Porcelanosa Grupo.
+
+OBJETIVO: Identificar oportunidades de colaboración (Offsite, Krion, Fachadas, Proyectos) y diseñar el abordaje comercial.
+
+INPUT DATOS:
+- Empresa: {company_name}
+- Contacto Clave: {contact_name} {contact_title}
+
+GENERA UN OUTPUT JSON ESTRICTO CON ESTA ESTRUCTURA DE ANÁLISIS EXPERTO:
+{{
+    "summary": "Resumen ejecutivo potente: qué hacen, dónde operan y por qué importan a Porcelanosa (8-10 líneas).",
+    "key_facts": ["Evidencia de negocio 1 (con fuente)", "Evidencia 2", "Señal de compra detectada"],
+    "radar_table": [
+        {{"area": "Fachadas/Butech", "necesidad": "Eficiencia energética en torres", "nivel": "Alto"}},
+        {{"area": "Industrialización", "necesidad": "Baños prefabricados (Monobath)", "nivel": "Medio"}}
+    ],
+    "hypothesis": [
+        {{"titulo": "Hipótesis 1 (Principal)", "score": 5, "razon": "Por su proyecto X, necesitan Y..."}},
+        {{"titulo": "Hipótesis 2 (Secundaria)", "score": 4, "razon": "..."}}
+    ],
+    "recommended_approach": "Propuesta de siguiente paso muy concreta (ej: Workshop Técnico o Visita Showroom).",
+    "risks": ["Posible objeción 1", "Riesgo operativo"],
+    "email_draft": "Asunto: ... Cuerpo: [120 palabras, enfoque colaboración, sin humo] ... CTA: ...",
+    "linkedin_draft": "Mensaje directo (max 500 chars): Referencia específica + Propuesta valor + Pregunta cierre.",
+    "confidence": "high"
+}}
+"""
+
+    payload = {
+        "model": model_name,
+        "messages": [
+            {"role": "system", "content": "You are a Senior B2B Sales Strategist. You always reply in valid JSON format."},
+            {"role": "user", "content": prompt}
+        ],
+        "stream": False,
+        "format": "json"
+    }
+
+    try:
+        url = "http://localhost:11434/api/chat"
+        response = requests.post(url, data=json.dumps(payload), timeout=120)
+        
+        if response.status_code == 200:
+            res_data = response.json()
+            content_text = res_data['message']['content']
+            
+            # Parsing logic
+            data = None
+            cleaned = content_text.strip()
+            cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
+            cleaned = re.sub(r'\s*```$', '', cleaned)
+            cleaned = cleaned.strip()
+            
+            try:
+                data = json.loads(cleaned)
+            except:
+                start = cleaned.find('{')
+                if start != -1:
+                    depth = 0
+                    end = start
+                    for i in range(start, len(cleaned)):
+                        if cleaned[i] == '{': depth += 1
+                        elif cleaned[i] == '}': depth -= 1
+                        if depth == 0:
+                            end = i + 1
+                            break
+                    try:
+                        data = json.loads(cleaned[start:end])
+                    except:
+                        pass
+            
+            if data is None:
+                data = {}
+                for field_name in ['summary', 'email_draft', 'linkedin_draft', 'recommended_approach', 'confidence']:
+                    match = re.search(rf'"{field_name}"\s*:\s*"((?:[^"\\]|\\.){{0,2000}})"', content_text, re.DOTALL)
+                    if match:
+                        data[field_name] = match.group(1).replace('\\n', '\n').replace('\\"', '"')
+            
+            encoded_name = urllib.parse.quote_plus(company_name)
+            sources = [{"title": f"Local AI: {model_name}", "url": "http://localhost:11434"}]
+
+            return AIResearchResult(
+                company_name=company_name,
+                summary=data.get("summary", content_text[:500]),
+                key_facts=data.get("key_facts", []),
+                decision_makers=[], recent_projects=[], opportunities=[],
+                risks=data.get("risks", []),
+                recommended_approach=data.get("recommended_approach", ""),
+                email_draft=data.get("email_draft", "No generado."),
+                linkedin_draft=data.get("linkedin_draft", "No generado."),
+                sources=sources,
+                confidence=data.get("confidence", "medium")
+            )
+        else:
+            raise Exception(f"Ollama Error: {response.status_code}")
+            
+    except Exception as e:
+        return AIResearchResult(
+            company_name=company_name,
+            summary=f"❌ Error Local (Ollama): {str(e)}. Asegúrate de que Ollama está corriendo con el modelo '{model_name}'.",
+            key_facts=[], decision_makers=[], recent_projects=[], opportunities=[], risks=[],
+            recommended_approach="", email_draft="", linkedin_draft="", sources=[], confidence="low"
+        )
