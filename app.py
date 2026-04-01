@@ -326,6 +326,9 @@ with st.sidebar:
             st.error("Introduce un país.")
         else:
             with st.spinner(f"Analizando mercado de {thermo_country}..."):
+                st.warning("⏳ **El modelo de IA (Qwen 3.5) está procesando.**\n\nAl ser un modelo local gratuito, esto tardará varios minutos dependiendo de tu PC. Es posible que el navegador se congele y la animación se detenga. **Por favor, espera sin cerrar la pestaña.**")
+                import time
+                time.sleep(0.5)  # Da tiempo a Stlite a renderizar el aviso antes de bloquear el hilo
                 result = analyze_market(
                     country=thermo_country,
                     objective=thermo_objective,

@@ -121,7 +121,7 @@ REGLAS:
 
     try:
         url = "http://localhost:11434/api/chat"
-        response = requests.post(url, data=json.dumps(payload), timeout=180)
+        response = requests.post(url, data=json.dumps(payload), timeout=600)
 
         if response.status_code == 200:
             res_data = response.json()
