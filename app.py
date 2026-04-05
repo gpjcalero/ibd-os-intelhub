@@ -24,6 +24,18 @@ from core.ai_research import research_with_openrouter, research_with_ollama
 from core.matching import process_tenders
 from core.market_thermometer import analyze_market
 from core.web_enricher import enrich_company
+import requests
+
+def is_ollama_available():
+    """Verifica si Ollama está corriendo en localhost."""
+    try:
+        res = requests.get("http://localhost:11434/api/tags", timeout=1)
+        if res.status_code == 200:
+            models = [m['name'] for m in res.json().get('models', [])]
+            return True, models
+        return False, []
+    except:
+        return False, []
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PREMIUM CSS (IntelHub Dark Theme)
@@ -275,25 +287,32 @@ with st.sidebar:
     st.caption("Strategic Intelligence Platform")
     
     # ── SECURITY & AI SETTINGS ──
-    api_key_input = st.text_input("🔑 OpenRouter API Key", type="password", placeholder="sk-or-v1-...")
-    selected_model = st.selectbox(
-        "🧠 AI Model (Agent 3)", 
-        [
+    ollama_on, local_models = is_ollama_available()
+    
+    if ollama_on:
+        st.success("🟢 Ollama Detectado", icon="💻")
+        model_list = [f"ollama/{m}" for m in local_models] + [
+            "--- Cloud (OpenRouter) ---",
             "anthropic/claude-3.7-sonnet",
-            "anthropic/claude-3.5-haiku",
-            "google/gemini-2.5-pro",
-            "google/gemini-2.5-flash",
-            "openai/gpt-4o",
+            "google/gemini-2.0-flash-lite-preview-02-05",
             "openai/gpt-4o-mini",
-            "deepseek/deepseek-chat",
-            "--- Local (Ollama) ---",
-            "ollama/qwen3.5:latest",
-            "ollama/qwen3:4b",
             "--- Custom Model ---"
-        ],
-        index=0,
-        help="Elige un modelo predefinido o '--- Custom Model ---' para escribir cualquier otro."
-    )
+        ]
+        default_idx = 0
+    else:
+        st.info("☁️ Modo Cloud Activo")
+        model_list = [
+            "anthropic/claude-3.7-sonnet",
+            "google/gemini-2.0-flash-lite-preview-02-05",
+            "openai/gpt-4o-mini",
+            "--- Custom Model ---"
+        ]
+        default_idx = 0
+
+    api_key_input = st.text_input("🔑 OpenRouter API Key", type="password", placeholder="sk-or-v1-...", value=st.session_state.get('api_key', ''))
+    if api_key_input: st.session_state.api_key = api_key_input
+    
+    selected_model = st.selectbox("🧠 AI Model", model_list, index=default_idx)
     
     # ── CUSTOM MODEL INPUT ──
     if selected_model == "--- Custom Model ---":
@@ -325,22 +344,26 @@ with st.sidebar:
         if not thermo_country:
             st.error("Introduce un país.")
         else:
-            with st.spinner(f"Analizando mercado de {thermo_country}..."):
-                if final_model.startswith("ollama/"):
-                    st.warning("⏳ **Modelo Local (Ollama) procesando.**\n\nAl ser local, esto tardará varios minutos. El navegador se congelará temporalmente. **Espera sin cerrar la pestaña.**")
-                else:
-                    st.info(f"⚡ Analizando el mercado con {final_model} vía OpenRouter...")
-                    
-                import time
-                time.sleep(0.5)  # Da tiempo a Stlite a renderizar el aviso antes de bloquear el hilo
-                result = analyze_market(
+            with st.status(f"Analizando {thermo_country}...", expanded=True) as status:
+                result = None
+                generator = analyze_market(
                     country=thermo_country,
                     objective=thermo_objective,
                     model_name=final_model,
                     api_key=api_key_input
                 )
-                st.session_state.thermometer_result = result
-                st.rerun()
+                for update in generator:
+                    if isinstance(update, str):
+                        status.update(label=update)
+                    else:
+                        result = update
+                
+                if result:
+                    status.update(label="✅ Análisis Completado", state="complete")
+                    st.session_state.thermometer_result = result
+                    st.rerun()
+                else:
+                    status.update(label="❌ Error en el análisis", state="error")
     
     # Show thermometer result if exists
     if 'thermometer_result' in st.session_state and st.session_state.thermometer_result:
@@ -651,10 +674,10 @@ with c_sel:
 with c_act:
     st.markdown('<span class="agent-tag tag-3">AGENT 3</span> &nbsp; <b>Commercial Strategist</b>', unsafe_allow_html=True)
     if st.button("🧠 GENERATE SALES STRATEGY", type="primary", use_container_width=True):
-        with st.spinner("Strategist Agent analyzing..."):
-            if not api_key_input and not final_model.startswith("ollama/"):
-                st.error("Error: Se requiere una API Key en la barra lateral (no necesaria para modelos locales).")
-            else:
+        if not api_key_input and not final_model.startswith("ollama/"):
+            st.error("Error: Se requiere una API Key en la barra lateral (no necesaria para modelos locales).")
+        else:
+            with st.status("Comercial Strategist analizando...", expanded=True) as status:
                 comp_norm = df_show[df_show['Empresa'] == selected_comp]['Normalized_Company'].iloc[0]
                 contact_rows = st.session_state.contacts_scored[st.session_state.contacts_scored['Normalized_Company'] == comp_norm]
                 best_contact = contact_rows.sort_values('Lead_Score', ascending=False).iloc[0]
@@ -662,28 +685,38 @@ with c_act:
                 c_name_col = next((c for c in best_contact.index if 'name' in c.lower()), '')
                 c_job_col = next((c for c in best_contact.index if 'job' in c.lower() or 'title' in c.lower()), '')
                 
+                result = None
                 if final_model.startswith("ollama/"):
-                    model_id = final_model.replace("ollama/", "")
-                    res = research_with_ollama(
-                        model_name=model_id,
+                    gen = research_with_ollama(
+                        model_name=final_model,
                         company_name=selected_comp,
                         country=str(best_contact.get('Country', '')),
                         contact_name=str(best_contact.get(c_name_col, '')),
                         contact_title=str(best_contact.get(c_job_col, ''))
                     )
                 else:
-                    res = research_with_openrouter(
-                        api_key=api_key_input, company_name=selected_comp,
+                    gen = research_with_openrouter(
+                        api_key=api_key_input, 
+                        company_name=selected_comp,
                         model_name=final_model,
                         country=str(best_contact.get('Country', '')),
                         contact_name=str(best_contact.get(c_name_col, '')),
                         contact_title=str(best_contact.get(c_job_col, ''))
                     )
                 
-                if res:
+                for update in gen:
+                    if isinstance(update, str):
+                        status.update(label=update)
+                    else:
+                        result = update
+                
+                if result:
+                    status.update(label="✅ Estrategia Generada", state="complete")
                     cache_key = f"{selected_comp}_{final_model}"
-                    st.session_state.research_cache[cache_key] = {'result': res, 'model': final_model}
+                    st.session_state.research_cache[cache_key] = {'result': result, 'model': final_model}
                     st.rerun()
+                else:
+                    status.update(label="❌ Error al generar estrategia", state="error")
 
 # ── STRATEGIC REPORT (Agent 3 Output) ──
 cache_key = f"{selected_comp}_{final_model}" if selected_comp else None
