@@ -1,6 +1,6 @@
 """
-PORCELANOSA OS - Core Package (v4.0 AGENTIC)
-Exports clean interfaces for Agent 1 (Prospector), Agent 2 (Matcher), and Agent 3 (Evaluator).
+PORCELANOSA OS - Core Package (v7.0)
+Exports clean interfaces for Agent 0, 1, 2, and 3.
 """
 
 from .normalizer import (
@@ -18,21 +18,29 @@ from .matching import (
 
 from .ai_research import (
     research_with_openrouter,
-    AIResearchResult
+    research_with_ollama,
+    clean_think_tags
+)
+
+from .market_thermometer import (
+    analyze_market
+)
+
+from .schemas import (
+    ThermometerResult,
+    StrategyReport,
+    EnrichmentResult
 )
 
 __all__ = [
-    # Normalizer (Agent 2 Support)
     'normalize_company_name',
-    
-    # Scoring (Agent 1)
     'score_dataframe',
-    
-    # Matching (Agent 2)
     'process_tenders',
     'B2BMatcher',
-    
-    # AI Research (Agent 3)
     'research_with_openrouter',
-    'AIResearchResult'
+    'research_with_ollama',
+    'analyze_market',
+    'ThermometerResult',
+    'StrategyReport',
+    'EnrichmentResult'
 ]
