@@ -60,10 +60,10 @@
 
 <body>
     <div id="loading">
-        <div class="brand">IBD OS v6.2 — IntelHub</div>
+        <div class="brand">IBD OS v7.0 — IntelHub</div>
         <div class="spinner"></div>
         <div id="status" style="font-size: 0.9rem; color: #8b949e; margin-top: 10px;">
-            Instalando entorno Python y AI Engine...
+            Instalando entorno Python, Pydantic y AI Engine...
         </div>
         <div id="error-msg">
             Hubo un error al iniciar. Por favor usa Chrome/Edge actualizado.
@@ -73,18 +73,19 @@
     <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.64.1/build/stlite.js"></script>
     <script>
         stlite.mount({
-            requirements: ["pandas", "openpyxl", "xlsxwriter", "numpy", "requests", "beautifulsoup4"],
+            requirements: ["pandas", "openpyxl", "xlsxwriter", "numpy", "requests", "beautifulsoup4", "pydantic"],
             entrypoint: "app.py",
             files: {
-                "app.py": { url: "app.py?v=6.2" },
-                "core/__init__.py": { url: "core/__init__.py?v=6.2" },
-                "core/ai_research.py": { url: "core/ai_research.py?v=6.2" },
-                "core/matching.py": { url: "core/matching.py?v=6.2" },
-                "core/normalizer.py": { url: "core/normalizer.py?v=6.2" },
-                "core/research.py": { url: "core/research.py?v=6.2" },
-                "core/scoring.py": { url: "core/scoring.py?v=6.2" },
-                "core/market_thermometer.py": { url: "core/market_thermometer.py?v=6.2" },
-                "core/web_enricher.py": { url: "core/web_enricher.py?v=6.2" }
+                "app.py": { url: "app.py?v=7.0" },
+                "core/__init__.py": { url: "core/__init__.py?v=7.0" },
+                "core/ai_research.py": { url: "core/ai_research.py?v=7.0" },
+                "core/matching.py": { url: "core/matching.py?v=7.0" },
+                "core/normalizer.py": { url: "core/normalizer.py?v=7.0" },
+                "core/research.py": { url: "core/research.py?v=7.0" },
+                "core/scoring.py": { url: "core/scoring.py?v=7.0" },
+                "core/market_thermometer.py": { url: "core/market_thermometer.py?v=7.0" },
+                "core/web_enricher.py": { url: "core/web_enricher.py?v=7.0" },
+                "core/schemas.py": { url: "core/schemas.py?v=7.0" }
             },
         }, document.getElementById("root")).catch(err => {
             console.error(err);
